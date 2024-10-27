@@ -1,10 +1,10 @@
-import { Todo } from '../../types/Todo';
 import { Errors } from '../../types/Errors';
 import { ToggleAllButton } from '../../components/ToggleAllButton';
 import { Form } from '../../components/Form';
+import { UpdateReasons } from '../../types/UpdateReasons';
 
 type Props = {
-  filteredTodos: Todo[];
+  todosCount: number;
   isAllCompleted: boolean;
   setTitle: (title: string) => void;
   setCurrentError: (error: Errors | null) => void;
@@ -12,10 +12,12 @@ type Props = {
   isAdded: boolean | null;
   currentError: Errors | null;
   isTodoDeleting: boolean;
+  setTypeOfStatusChange: (statusChanging: boolean | null) => void;
+  setReasonForUpdate: (reason: UpdateReasons | null) => void;
 };
 
 export const Header: React.FC<Props> = ({
-  filteredTodos,
+  todosCount,
   isAllCompleted,
   setTitle,
   setCurrentError,
@@ -23,12 +25,18 @@ export const Header: React.FC<Props> = ({
   isAdded,
   isTodoDeleting,
   currentError,
+  setTypeOfStatusChange,
+  setReasonForUpdate,
 }) => {
   return (
     <header className="todoapp__header">
       {/* this button should have `active` class only if all todos are completed */}
-      {filteredTodos.length > 0 && (
-        <ToggleAllButton isAllCompleted={isAllCompleted} />
+      {todosCount > 0 && (
+        <ToggleAllButton
+          isAllCompleted={isAllCompleted}
+          setTypeOfStatusChange={setTypeOfStatusChange}
+          setReasonForUpdate={setReasonForUpdate}
+        />
       )}
 
       {/* Add a todo on form submit */}

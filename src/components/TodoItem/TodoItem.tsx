@@ -3,6 +3,7 @@
 
 import classNames from 'classnames';
 import { Todo } from '../../types/Todo';
+import { UpdateReasons } from '../../types/UpdateReasons';
 
 type Props = {
   todo: Todo;
@@ -12,6 +13,10 @@ type Props = {
   isTodoDeleting?: boolean;
   setTodoIdsForRemoving?: (id: number[] | null) => void;
   setIsTodoDeleting?: (isTodoDeleting: boolean) => void;
+  idsForStatusChange: number[];
+  setIdsForStatusChange: (idsForStatusChange: number[]) => void;
+  setReasonForUpdate: (reason: UpdateReasons | null) => void;
+  setTypeOfStatusChange: (statusChanging: boolean | null) => void;
 };
 
 export const TodoItem: React.FC<Props> = ({
@@ -21,6 +26,10 @@ export const TodoItem: React.FC<Props> = ({
   isTodoDeleting,
   setTodoIdsForRemoving,
   setIsTodoDeleting,
+  idsForStatusChange,
+  setReasonForUpdate,
+  setIdsForStatusChange,
+  setTypeOfStatusChange,
 }) => {
   const { completed, title, id } = todo;
 
@@ -30,6 +39,19 @@ export const TodoItem: React.FC<Props> = ({
         todoIdsForRemoving ? [...todoIdsForRemoving!, id] : [id],
       );
       setIsTodoDeleting(true);
+    }
+  };
+
+  const onStatusChange = () => {
+    setReasonForUpdate(UpdateReasons.oneToggled);
+    setIdsForStatusChange(
+      idsForStatusChange ? [...idsForStatusChange, id] : [id],
+    );
+
+    if (completed) {
+      setTypeOfStatusChange(false);
+    } else {
+      setTypeOfStatusChange(true);
     }
   };
 
@@ -44,6 +66,7 @@ export const TodoItem: React.FC<Props> = ({
           type="checkbox"
           className="todo__status"
           checked={completed}
+          onChange={onStatusChange}
         />
       </label>
 
@@ -65,7 +88,8 @@ export const TodoItem: React.FC<Props> = ({
         className={classNames('modal overlay', {
           'is-active':
             isNewTodoAdding ||
-            (isTodoDeleting && todoIdsForRemoving?.includes(id)),
+            (isTodoDeleting && todoIdsForRemoving?.includes(id)) ||
+            idsForStatusChange.includes(id),
         })}
       >
         <div className="modal-background has-background-white-ter" />

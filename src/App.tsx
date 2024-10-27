@@ -1,9 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserWarning } from './UserWarning';
-import { getTodos, addTodo, deleteTodo, USER_ID } from './api/todos';
+import {
+  getTodos,
+  addTodo,
+  deleteTodo,
+  updateTodo,
+  USER_ID,
+} from './api/todos';
 import { Todo } from './types/Todo';
 import { Filters } from './types/Filters';
 import { Errors } from './types/Errors';
+import { UpdateReasons } from './types/UpdateReasons';
 import { useDelayedSetState } from './hooks/useDelayedSetState';
 import { Header } from './blocks/Header';
 import { Footer } from './blocks/Footer';
@@ -23,6 +30,15 @@ export const App: React.FC = () => {
     null,
   );
   const [isTodoDeleting, setIsTodoDeleting] = useState<boolean>(false);
+  const [reasonForUpdate, setReasonForUpdate] = useState<UpdateReasons | null>(
+    null,
+  );
+  const [typeOfStatusChange, setTypeOfStatusChange] = useState<boolean | null>(
+    null,
+  );
+  const [idsForStatusChange, setIdsForStatusChange] = useState<number[] | []>(
+    [],
+  );
 
   useEffect(() => {
     getTodos()
@@ -66,13 +82,7 @@ export const App: React.FC = () => {
     setIsAdded(false);
   }, [title]);
 
-  const onFilterChange = (filter: Filters) => {
-    if (currentFilter === filter) {
-      return;
-    }
-
-    setCurrentFilter(filter);
-
+  const handleFilteredTodos = (filter: Filters) => {
     const { all, active, completed } = Filters;
 
     switch (filter) {
@@ -88,6 +98,16 @@ export const App: React.FC = () => {
     }
   };
 
+  const onFilterChange = (filter: Filters) => {
+    if (currentFilter === filter) {
+      return;
+    }
+
+    setCurrentFilter(filter);
+
+    handleFilteredTodos(filter);
+  };
+
   const isAllCompleted = useMemo(() => {
     return filteredTodos.every(todo => todo.completed);
   }, [filteredTodos]);
@@ -100,12 +120,69 @@ export const App: React.FC = () => {
     return todos.length - uncompletedCount;
   }, [todos, uncompletedCount]);
 
+  const uncompletedIds = useMemo(() => {
+    return todos.filter(todo => !todo.completed).map(todo => todo.id);
+  }, [todos]);
+
+  const completedIds = useMemo(() => {
+    return todos.filter(todo => todo.completed).map(todo => todo.id);
+  }, [todos]);
+
   const clearCompleted = () => {
     setTodoIdsForRemoving(
       todos.filter(todo => todo.completed).map(todo => todo.id),
     );
     setIsTodoDeleting(true);
   };
+
+  useEffect(() => {
+    if (typeOfStatusChange === null) {
+      return;
+    }
+
+    let idsForChange: number[] = idsForStatusChange;
+
+    if (reasonForUpdate === UpdateReasons.allToggled) {
+      idsForChange =
+        typeOfStatusChange === true
+          ? uncompletedIds
+          : typeOfStatusChange === false
+            ? completedIds
+            : [];
+
+      setIdsForStatusChange(idsForChange);
+    }
+
+    Promise.allSettled(
+      idsForChange.map(id => {
+        const updateData = { completed: typeOfStatusChange };
+
+        return updateTodo(id, updateData).then(() => id);
+      }),
+    )
+      .then(results => {
+        const successfulUpdates = results
+          .filter(result => result.status === 'fulfilled')
+          .map(result => result.value);
+
+        setTodos(t =>
+          t.map(todo =>
+            successfulUpdates.includes(todo.id)
+              ? { ...todo, completed: typeOfStatusChange }
+              : todo,
+          ),
+        );
+        setFilteredTodos(todos);
+        if (results.some(result => result.status === 'rejected')) {
+          setCurrentError(Errors.update);
+        }
+      })
+      .finally(() => {
+        setIdsForStatusChange([]);
+        setTypeOfStatusChange(null);
+        setReasonForUpdate(null);
+      });
+  }, [typeOfStatusChange]);
 
   useEffect(() => {
     if (
@@ -136,6 +213,10 @@ export const App: React.FC = () => {
       });
   }, [isTodoDeleting, todoIdsForRemoving]);
 
+  useEffect(() => {
+    handleFilteredTodos(currentFilter);
+  }, [todos, currentFilter]);
+
   if (!USER_ID) {
     return <UserWarning />;
   }
@@ -146,7 +227,7 @@ export const App: React.FC = () => {
 
       <div className="todoapp__content">
         <Header
-          filteredTodos={filteredTodos}
+          todosCount={todos.length}
           isAllCompleted={isAllCompleted}
           setTitle={setTitle}
           setCurrentError={setCurrentError}
@@ -154,6 +235,8 @@ export const App: React.FC = () => {
           isAdded={isAdded}
           currentError={currentError}
           isTodoDeleting={isTodoDeleting}
+          setTypeOfStatusChange={setTypeOfStatusChange}
+          setReasonForUpdate={setReasonForUpdate}
         />
 
         <TodoList
@@ -164,6 +247,10 @@ export const App: React.FC = () => {
           setIsTodoDeleting={setIsTodoDeleting}
           todoIdsForRemoving={todoIdsForRemoving}
           setTodoIdsForRemoving={setTodoIdsForRemoving}
+          setReasonForUpdate={setReasonForUpdate}
+          idsForStatusChange={idsForStatusChange}
+          setIdsForStatusChange={setIdsForStatusChange}
+          setTypeOfStatusChange={setTypeOfStatusChange}
         />
 
         {/* Hide the footer if there are no todos */}

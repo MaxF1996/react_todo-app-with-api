@@ -1,4 +1,5 @@
 import { Todo } from '../../types/Todo';
+import { UpdateReasons } from '../../types/UpdateReasons';
 import { TodoItem } from '../TodoItem';
 
 type Props = {
@@ -9,6 +10,10 @@ type Props = {
   isTodoDeleting: boolean;
   setIsTodoDeleting: (isTodoDeleting: boolean) => void;
   setTodoIdsForRemoving: (id: number[] | null) => void;
+  idsForStatusChange: number[];
+  setReasonForUpdate: (reason: UpdateReasons | null) => void;
+  setIdsForStatusChange: (idsForStatusChange: number[]) => void;
+  setTypeOfStatusChange: (statusChanging: boolean | null) => void;
 };
 
 export const TodoList: React.FC<Props> = ({
@@ -19,6 +24,10 @@ export const TodoList: React.FC<Props> = ({
   isTodoDeleting,
   setTodoIdsForRemoving,
   setIsTodoDeleting,
+  idsForStatusChange,
+  setReasonForUpdate,
+  setIdsForStatusChange,
+  setTypeOfStatusChange,
 }) => {
   return (
     <section className="todoapp__main" data-cy="TodoList">
@@ -30,6 +39,10 @@ export const TodoList: React.FC<Props> = ({
           setIsTodoDeleting={setIsTodoDeleting}
           todoIdsForRemoving={todoIdsForRemoving}
           setTodoIdsForRemoving={setTodoIdsForRemoving}
+          idsForStatusChange={idsForStatusChange}
+          setReasonForUpdate={setReasonForUpdate}
+          setIdsForStatusChange={setIdsForStatusChange}
+          setTypeOfStatusChange={setTypeOfStatusChange}
         />
       ))}
 
@@ -39,6 +52,10 @@ export const TodoList: React.FC<Props> = ({
           todo={loadingTodo!}
           isNewTodoAdding={isNewTodoAdding}
           todoIdsForRemoving={todoIdsForRemoving}
+          idsForStatusChange={idsForStatusChange}
+          setIdsForStatusChange={setIdsForStatusChange}
+          setReasonForUpdate={setReasonForUpdate}
+          setTypeOfStatusChange={setTypeOfStatusChange}
         />
       )}
     </section>
