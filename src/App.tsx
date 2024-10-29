@@ -36,9 +36,10 @@ export const App: React.FC = () => {
   const [typeOfStatusChange, setTypeOfStatusChange] = useState<boolean | null>(
     null,
   );
-  const [idsForStatusChange, setIdsForStatusChange] = useState<number[] | []>(
-    [],
-  );
+  const [titleForUpdate, setTitleForUpdate] = useState<string>('');
+  const [titleSuccess, setTitleSuccess] = useState<boolean | null>(false);
+  const [idsForUpdate, setIdsForUpdate] = useState<number[] | []>([]);
+  const [needAutoFocus, setNeedAutoFocus] = useState<boolean | null>(false);
 
   useEffect(() => {
     getTodos()
@@ -54,6 +55,7 @@ export const App: React.FC = () => {
 
   useDelayedSetState(currentError, setCurrentError);
   useDelayedSetState(isAdded, setIsAdded, false, 1000);
+  useDelayedSetState(titleSuccess, setTitleSuccess, false, 1000);
 
   useEffect(() => {
     if (!title) {
@@ -72,6 +74,7 @@ export const App: React.FC = () => {
       })
       .catch(() => {
         setCurrentError(Errors.add);
+        setNeedAutoFocus(true);
       })
       .finally(() => {
         setIsNewTodoAdding(false);
@@ -135,12 +138,12 @@ export const App: React.FC = () => {
     setIsTodoDeleting(true);
   };
 
-  useEffect(() => {
-    if (typeOfStatusChange === null) {
-      return;
-    }
-
-    let idsForChange: number[] = idsForStatusChange;
+  const prepareUpdateData = (): [
+    { completed?: boolean; title?: string },
+    number[],
+  ] => {
+    let idsForChange: number[] = idsForUpdate;
+    let updateData: { completed?: boolean; title?: string } = {};
 
     if (reasonForUpdate === UpdateReasons.allToggled) {
       idsForChange =
@@ -149,40 +152,68 @@ export const App: React.FC = () => {
           : typeOfStatusChange === false
             ? completedIds
             : [];
+      setIdsForUpdate(idsForChange);
+      updateData = { completed: typeOfStatusChange ?? undefined };
+    } else if (reasonForUpdate === UpdateReasons.oneToggled) {
+      updateData = { completed: typeOfStatusChange ?? undefined };
+    } else if (reasonForUpdate === UpdateReasons.titleChanged) {
+      updateData = { title: titleForUpdate };
+    }
 
-      setIdsForStatusChange(idsForChange);
+    return [updateData, idsForChange];
+  };
+
+  useEffect(() => {
+    if (reasonForUpdate === null) {
+      return;
+    }
+
+    const [updateData, idsForChange = []] = prepareUpdateData();
+
+    if (idsForChange.length === 0) {
+      return;
     }
 
     Promise.allSettled(
       idsForChange.map(id => {
-        const updateData = { completed: typeOfStatusChange };
-
         return updateTodo(id, updateData).then(() => id);
       }),
     )
       .then(results => {
         const successfulUpdates = results
           .filter(result => result.status === 'fulfilled')
-          .map(result => result.value);
+          .map(result => result.value as number);
 
         setTodos(t =>
-          t.map(todo =>
-            successfulUpdates.includes(todo.id)
-              ? { ...todo, completed: typeOfStatusChange }
-              : todo,
-          ),
+          t.map(todo => {
+            if (successfulUpdates.includes(todo.id)) {
+              return reasonForUpdate === UpdateReasons.titleChanged
+                ? { ...todo, title: titleForUpdate }
+                : { ...todo, completed: typeOfStatusChange ?? false };
+            }
+
+            return todo;
+          }),
         );
         setFilteredTodos(todos);
         if (results.some(result => result.status === 'rejected')) {
           setCurrentError(Errors.update);
         }
+
+        if (
+          reasonForUpdate === UpdateReasons.titleChanged &&
+          results.every(result => result.status === 'fulfilled')
+        ) {
+          setTitleSuccess(true);
+        }
       })
       .finally(() => {
-        setIdsForStatusChange([]);
+        setIdsForUpdate([]);
         setTypeOfStatusChange(null);
         setReasonForUpdate(null);
+        setTitleForUpdate('');
       });
-  }, [typeOfStatusChange]);
+  }, [reasonForUpdate]);
 
   useEffect(() => {
     if (
@@ -217,6 +248,8 @@ export const App: React.FC = () => {
     handleFilteredTodos(currentFilter);
   }, [todos, currentFilter]);
 
+  useDelayedSetState(needAutoFocus, setNeedAutoFocus, false, 500);
+
   if (!USER_ID) {
     return <UserWarning />;
   }
@@ -237,6 +270,7 @@ export const App: React.FC = () => {
           isTodoDeleting={isTodoDeleting}
           setTypeOfStatusChange={setTypeOfStatusChange}
           setReasonForUpdate={setReasonForUpdate}
+          needAutoFocus={needAutoFocus}
         />
 
         <TodoList
@@ -248,9 +282,11 @@ export const App: React.FC = () => {
           todoIdsForRemoving={todoIdsForRemoving}
           setTodoIdsForRemoving={setTodoIdsForRemoving}
           setReasonForUpdate={setReasonForUpdate}
-          idsForStatusChange={idsForStatusChange}
-          setIdsForStatusChange={setIdsForStatusChange}
+          idsForUpdate={idsForUpdate}
+          setIdsForUpdate={setIdsForUpdate}
           setTypeOfStatusChange={setTypeOfStatusChange}
+          setTitleForUpdate={setTitleForUpdate}
+          titleSuccess={titleSuccess}
         />
 
         {/* Hide the footer if there are no todos */}

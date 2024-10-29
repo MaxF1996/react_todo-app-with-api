@@ -14,6 +14,7 @@ type Props = {
   isTodoDeleting: boolean;
   setTypeOfStatusChange: (statusChanging: boolean | null) => void;
   setReasonForUpdate: (reason: UpdateReasons | null) => void;
+  needAutoFocus: boolean | null;
 };
 
 export const Header: React.FC<Props> = ({
@@ -24,9 +25,9 @@ export const Header: React.FC<Props> = ({
   isNewTodoAdding,
   isAdded,
   isTodoDeleting,
-  currentError,
   setTypeOfStatusChange,
   setReasonForUpdate,
+  needAutoFocus,
 }) => {
   return (
     <header className="todoapp__header">
@@ -46,7 +47,7 @@ export const Header: React.FC<Props> = ({
         isNewTodoAdding={isNewTodoAdding}
         isAdded={isAdded}
         isTodoDeleting={isTodoDeleting}
-        currentError={currentError}
+        needAutoFocus={needAutoFocus}
       />
     </header>
   );

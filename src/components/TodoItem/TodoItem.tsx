@@ -4,6 +4,7 @@
 import classNames from 'classnames';
 import { Todo } from '../../types/Todo';
 import { UpdateReasons } from '../../types/UpdateReasons';
+import { useEffect, useState } from 'react';
 
 type Props = {
   todo: Todo;
@@ -13,10 +14,12 @@ type Props = {
   isTodoDeleting?: boolean;
   setTodoIdsForRemoving?: (id: number[] | null) => void;
   setIsTodoDeleting?: (isTodoDeleting: boolean) => void;
-  idsForStatusChange: number[];
-  setIdsForStatusChange: (idsForStatusChange: number[]) => void;
+  idsForUpdate: number[];
+  setIdsForUpdate: (idsForUpdate: number[]) => void;
   setReasonForUpdate: (reason: UpdateReasons | null) => void;
   setTypeOfStatusChange: (statusChanging: boolean | null) => void;
+  setTitleForUpdate: (title: string) => void;
+  titleSuccess: boolean | null;
 };
 
 export const TodoItem: React.FC<Props> = ({
@@ -26,12 +29,17 @@ export const TodoItem: React.FC<Props> = ({
   isTodoDeleting,
   setTodoIdsForRemoving,
   setIsTodoDeleting,
-  idsForStatusChange,
+  idsForUpdate,
   setReasonForUpdate,
-  setIdsForStatusChange,
+  setIdsForUpdate,
   setTypeOfStatusChange,
+  setTitleForUpdate,
+  titleSuccess,
 }) => {
   const { completed, title, id } = todo;
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState<string>(title);
 
   const onDelete = () => {
     if (setTodoIdsForRemoving && setIsTodoDeleting) {
@@ -44,15 +52,65 @@ export const TodoItem: React.FC<Props> = ({
 
   const onStatusChange = () => {
     setReasonForUpdate(UpdateReasons.oneToggled);
-    setIdsForStatusChange(
-      idsForStatusChange ? [...idsForStatusChange, id] : [id],
-    );
+    setIdsForUpdate(idsForUpdate ? [...idsForUpdate, id] : [id]);
 
     if (completed) {
       setTypeOfStatusChange(false);
     } else {
       setTypeOfStatusChange(true);
     }
+  };
+
+  const handleDoubleClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleDelete = () => {
+    if (setTodoIdsForRemoving && setIsTodoDeleting) {
+      setTodoIdsForRemoving(
+        todoIdsForRemoving ? [...todoIdsForRemoving!, id] : [id],
+      );
+      setIsTodoDeleting(true);
+    }
+  };
+
+  const handleUpdate = () => {
+    setReasonForUpdate(UpdateReasons.titleChanged);
+    setTitleForUpdate(editedTitle.trim());
+    setIdsForUpdate(idsForUpdate ? [...idsForUpdate, id] : [id]);
+  };
+
+  useEffect(() => {
+    if (titleSuccess) {
+      setIsEditing(false);
+    }
+  }, [titleSuccess]);
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+  };
+
+  const handleOnBlur = () => {
+    if (!editedTitle.trim()) {
+      handleDelete();
+    } else if (editedTitle !== title) {
+      handleUpdate();
+    } else {
+      cancelEditing();
+    }
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      cancelEditing();
+    } else if (e.key === 'Enter') {
+      handleOnBlur();
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleOnBlur();
   };
 
   return (
@@ -70,18 +128,39 @@ export const TodoItem: React.FC<Props> = ({
         />
       </label>
 
-      <span data-cy="TodoTitle" className="todo__title">
-        {title}
-      </span>
+      {isEditing ? (
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            className="todo__title-field"
+            data-cy="TodoTitleField"
+            value={editedTitle}
+            onChange={e => setEditedTitle(e.target.value)}
+            onBlur={handleOnBlur}
+            onKeyUp={handleKeyUp}
+            autoFocus={isEditing}
+          />
+        </form>
+      ) : (
+        <span
+          data-cy="TodoTitle"
+          className="todo__title"
+          onDoubleClick={handleDoubleClick}
+        >
+          {title}
+        </span>
+      )}
 
-      <button
-        type="button"
-        className="todo__remove"
-        data-cy="TodoDelete"
-        onClick={onDelete}
-      >
-        ×
-      </button>
+      {!isEditing && (
+        <button
+          type="button"
+          className="todo__remove"
+          data-cy="TodoDelete"
+          onClick={onDelete}
+        >
+          ×
+        </button>
+      )}
 
       <div
         data-cy="TodoLoader"
@@ -89,7 +168,7 @@ export const TodoItem: React.FC<Props> = ({
           'is-active':
             isNewTodoAdding ||
             (isTodoDeleting && todoIdsForRemoving?.includes(id)) ||
-            idsForStatusChange.includes(id),
+            idsForUpdate.includes(id),
         })}
       >
         <div className="modal-background has-background-white-ter" />

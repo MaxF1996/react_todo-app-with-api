@@ -10,10 +10,12 @@ type Props = {
   isTodoDeleting: boolean;
   setIsTodoDeleting: (isTodoDeleting: boolean) => void;
   setTodoIdsForRemoving: (id: number[] | null) => void;
-  idsForStatusChange: number[];
+  idsForUpdate: number[];
   setReasonForUpdate: (reason: UpdateReasons | null) => void;
-  setIdsForStatusChange: (idsForStatusChange: number[]) => void;
+  setIdsForUpdate: (idsForUpdate: number[]) => void;
   setTypeOfStatusChange: (statusChanging: boolean | null) => void;
+  setTitleForUpdate: (title: string) => void;
+  titleSuccess: boolean | null;
 };
 
 export const TodoList: React.FC<Props> = ({
@@ -24,10 +26,12 @@ export const TodoList: React.FC<Props> = ({
   isTodoDeleting,
   setTodoIdsForRemoving,
   setIsTodoDeleting,
-  idsForStatusChange,
+  idsForUpdate,
   setReasonForUpdate,
-  setIdsForStatusChange,
+  setIdsForUpdate,
   setTypeOfStatusChange,
+  setTitleForUpdate,
+  titleSuccess,
 }) => {
   return (
     <section className="todoapp__main" data-cy="TodoList">
@@ -39,10 +43,12 @@ export const TodoList: React.FC<Props> = ({
           setIsTodoDeleting={setIsTodoDeleting}
           todoIdsForRemoving={todoIdsForRemoving}
           setTodoIdsForRemoving={setTodoIdsForRemoving}
-          idsForStatusChange={idsForStatusChange}
+          idsForUpdate={idsForUpdate}
           setReasonForUpdate={setReasonForUpdate}
-          setIdsForStatusChange={setIdsForStatusChange}
+          setIdsForUpdate={setIdsForUpdate}
           setTypeOfStatusChange={setTypeOfStatusChange}
+          setTitleForUpdate={setTitleForUpdate}
+          titleSuccess={titleSuccess}
         />
       ))}
 
@@ -52,10 +58,12 @@ export const TodoList: React.FC<Props> = ({
           todo={loadingTodo!}
           isNewTodoAdding={isNewTodoAdding}
           todoIdsForRemoving={todoIdsForRemoving}
-          idsForStatusChange={idsForStatusChange}
-          setIdsForStatusChange={setIdsForStatusChange}
+          idsForUpdate={idsForUpdate}
+          setIdsForUpdate={setIdsForUpdate}
           setReasonForUpdate={setReasonForUpdate}
           setTypeOfStatusChange={setTypeOfStatusChange}
+          setTitleForUpdate={setTitleForUpdate}
+          titleSuccess={titleSuccess}
         />
       )}
     </section>

@@ -4,10 +4,10 @@ import { Errors } from '../../types/Errors';
 type Props = {
   setTitle: (title: string) => void;
   setCurrentError: (error: Errors | null) => void;
-  currentError: Errors | null;
   isNewTodoAdding: boolean;
   isAdded: boolean | null;
   isTodoDeleting: boolean;
+  needAutoFocus: boolean | null;
 };
 
 export const Form: React.FC<Props> = ({
@@ -16,7 +16,7 @@ export const Form: React.FC<Props> = ({
   isNewTodoAdding,
   isAdded,
   isTodoDeleting,
-  currentError,
+  needAutoFocus,
 }) => {
   const [currentTitle, setCurrentTitle] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,12 +34,14 @@ export const Form: React.FC<Props> = ({
   }, [isAdded, isTodoDeleting]);
 
   useEffect(() => {
-    if (currentError === null) {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
+    if (!needAutoFocus) {
+      return;
     }
-  }, [currentError]);
+
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [needAutoFocus]);
 
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
